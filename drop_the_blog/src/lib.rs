@@ -8,24 +8,42 @@ pub struct Blog {
 
 impl Blog {
     pub fn new() -> Blog {
-        
+        Blog { drops: Cell::new(0), states: RefCell::new(vec![]) }
     }
-    pub fn new_article(&self, body: String) -> (usize, Article) {}
-    pub fn new_id(&self) -> usize {}
-    pub fn is_dropped(&self, id: usize) -> bool {}
-    pub fn add_drop(&self, id: usize) {}
+    pub fn new_article(&self, body: String) -> (usize, Article) {
+        let id = self.new_id();
+        self.states.borrow_mut().push(false);
+        let article = Article::new(id, body, self);
+        (id, article)
+    }
+    pub fn new_id(&self) -> usize {
+        self.states.borrow().len()
+    }
+    pub fn is_dropped(&self, id: usize) -> bool {
+        self.states.borrow()[id]
+    }
+    pub fn add_drop(&self, id: usize) {
+        let mut st = self.states.borrow_mut();
+        if st[id] {
+            panic!("{id}");
+        }
+        st[id] = true;
+        self.drops.set(self.drops.get() + 1);
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Article<'a> {
     pub id: usize,
     pub body: String,
-    pub parent: Blog,
+    pub blog: &'a Blog,
 }
 
 impl<'a> Article<'a> {
     pub fn new(id: usize, body: String, blog: &'a Blog) -> Article {
         Article{id, body, blog}
     }
-    pub fn discard(self) {}
+    pub fn discard(self) {
+        self.blog.add_drop(self.id);
+    }
 }
